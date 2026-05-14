@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         YouTube Like Hotkey
 // @namespace    https://youtube.com/
-// @version      1.2
+// @version      1.3
 // @description  Add a configurable keyboard shortcut to like YouTube videos
 // @match        https://www.youtube.com/*
 // @updateURL    https://raw.githubusercontent.com/snape2019/youtube-like-hotkey/main/youtube-like-hotkey.user.js
@@ -150,7 +150,7 @@
     if (likeButton) {
       event.preventDefault();
       likeButton.click();
-      showToast('已点击点赞');
+      showToast('已点赞');
     }
   });
 })();
