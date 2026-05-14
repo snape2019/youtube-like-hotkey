@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         YouTube Like Hotkey
 // @namespace    https://youtube.com/
-// @version      1.1
+// @version      1.2
 // @description  Add a configurable keyboard shortcut to like YouTube videos
 // @match        https://www.youtube.com/*
 // @updateURL    https://raw.githubusercontent.com/snape2019/youtube-like-hotkey/main/youtube-like-hotkey.user.js
@@ -39,20 +39,50 @@
   }
 
   function findLikeButton() {
+    const segmentedLikeButton = document.querySelector(
+      'ytd-segmented-like-dislike-button-renderer segmented-like-dislike-button-view-model like-button-view-model button'
+    );
+
+    if (segmentedLikeButton) return segmentedLikeButton;
+
+    const likeButtonViewModel = document.querySelector(
+      'like-button-view-model button, ytd-toggle-button-renderer:first-child button'
+    );
+
+    if (likeButtonViewModel && !isDislikeButton(likeButtonViewModel)) {
+      return likeButtonViewModel;
+    }
+
     const buttons = Array.from(document.querySelectorAll('button'));
 
     return buttons.find((button) => {
-      const label =
-        button.getAttribute('aria-label') ||
-        button.getAttribute('title') ||
-        '';
+      if (isDislikeButton(button)) return false;
+
+      const label = getButtonLabel(button);
 
       return (
         /like this video/i.test(label) ||
         /^like$/i.test(label) ||
-        /我喜歡這部影片|喜欢此视频|赞|点赞/i.test(label)
+        /我喜歡這部影片|喜歡這部影片|喜欢此视频|喜欢这个视频|点赞/i.test(label)
       );
     });
+  }
+
+  function getButtonLabel(button) {
+    return [
+      button.getAttribute('aria-label'),
+      button.getAttribute('title'),
+      button.textContent,
+    ]
+      .filter(Boolean)
+      .join(' ')
+      .trim();
+  }
+
+  function isDislikeButton(button) {
+    const label = getButtonLabel(button);
+
+    return /dislike|not interested|不喜欢|不喜歡|踩|倒赞|倒讚/i.test(label);
   }
 
   function showToast(message) {
