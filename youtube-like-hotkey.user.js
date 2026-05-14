@@ -1,0 +1,126 @@
+// ==UserScript==
+// @name         YouTube Like Hotkey
+// @namespace    https://youtube.com/
+// @version      1.1
+// @description  Add a configurable keyboard shortcut to like YouTube videos
+// @match        https://www.youtube.com/*
+// @updateURL    https://raw.githubusercontent.com/snape2019/youtube-like-hotkey/main/youtube-like-hotkey.user.js
+// @downloadURL  https://raw.githubusercontent.com/snape2019/youtube-like-hotkey/main/youtube-like-hotkey.user.js
+// @grant        GM_registerMenuCommand
+// @grant        GM_getValue
+// @grant        GM_setValue
+// ==/UserScript==
+
+(function () {
+  'use strict';
+
+  const DEFAULT_HOTKEY = 'g';
+  const STORAGE_KEY = 'youtube_like_hotkey';
+
+  function getHotkey() {
+    return String(GM_getValue(STORAGE_KEY, DEFAULT_HOTKEY)).toLowerCase();
+  }
+
+  function setHotkey(key) {
+    GM_setValue(STORAGE_KEY, key.toLowerCase());
+  }
+
+  function isTypingTarget(el) {
+    if (!el) return false;
+
+    const tag = el.tagName?.toLowerCase();
+
+    return (
+      tag === 'input' ||
+      tag === 'textarea' ||
+      el.isContentEditable ||
+      el.closest?.('[contenteditable="true"]')
+    );
+  }
+
+  function findLikeButton() {
+    const buttons = Array.from(document.querySelectorAll('button'));
+
+    return buttons.find((button) => {
+      const label =
+        button.getAttribute('aria-label') ||
+        button.getAttribute('title') ||
+        '';
+
+      return (
+        /like this video/i.test(label) ||
+        /^like$/i.test(label) ||
+        /我喜歡這部影片|喜欢此视频|赞|点赞/i.test(label)
+      );
+    });
+  }
+
+  function showToast(message) {
+    const oldToast = document.querySelector('#yt-like-hotkey-toast');
+    oldToast?.remove();
+
+    const toast = document.createElement('div');
+    toast.id = 'yt-like-hotkey-toast';
+    toast.textContent = message;
+
+    Object.assign(toast.style, {
+      position: 'fixed',
+      left: '50%',
+      bottom: '80px',
+      transform: 'translateX(-50%)',
+      zIndex: '999999',
+      padding: '10px 16px',
+      borderRadius: '8px',
+      background: 'rgba(0, 0, 0, 0.86)',
+      color: '#fff',
+      fontSize: '14px',
+      fontFamily: 'Arial, sans-serif',
+      boxShadow: '0 4px 18px rgba(0, 0, 0, 0.25)',
+    });
+
+    document.body.appendChild(toast);
+
+    setTimeout(() => {
+      toast.remove();
+    }, 1800);
+  }
+
+  function openSettings() {
+    const current = getHotkey();
+
+    const input = prompt(
+      `请输入点赞快捷键，当前是：${current.toUpperCase()}\n\n建议只输入一个字母，例如 G、Q、Z。`,
+      current.toUpperCase()
+    );
+
+    if (!input) return;
+
+    const key = input.trim().toLowerCase();
+
+    if (!/^[a-z0-9]$/.test(key)) {
+      alert('快捷键只能是单个字母或数字。');
+      return;
+    }
+
+    setHotkey(key);
+    showToast(`YouTube 点赞快捷键已改为 ${key.toUpperCase()}`);
+  }
+
+  GM_registerMenuCommand('设置 YouTube 点赞快捷键', openSettings);
+
+  document.addEventListener('keydown', (event) => {
+    const hotkey = getHotkey();
+
+    if (event.key.toLowerCase() !== hotkey) return;
+    if (event.ctrlKey || event.metaKey || event.altKey || event.shiftKey) return;
+    if (isTypingTarget(document.activeElement)) return;
+
+    const likeButton = findLikeButton();
+
+    if (likeButton) {
+      event.preventDefault();
+      likeButton.click();
+      showToast('已点击点赞');
+    }
+  });
+})();
