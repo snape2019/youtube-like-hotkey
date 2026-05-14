@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         YouTube Like Hotkey
 // @namespace    https://youtube.com/
-// @version      1.3
+// @version      1.4
 // @description  Add a configurable keyboard shortcut to like YouTube videos
 // @match        https://www.youtube.com/*
 // @updateURL    https://raw.githubusercontent.com/snape2019/youtube-like-hotkey/main/youtube-like-hotkey.user.js
@@ -85,6 +85,21 @@
     return /dislike|not interested|不喜欢|不喜歡|踩|倒赞|倒讚/i.test(label);
   }
 
+  function isLiked(button) {
+    const label = getButtonLabel(button);
+    const pressed = button.getAttribute('aria-pressed');
+    const container = button.closest(
+      'like-button-view-model, ytd-toggle-button-renderer'
+    );
+
+    return (
+      pressed === 'true' ||
+      /unlike|remove like|取消点赞|取消喜歡|取消喜欢|移除喜歡|移除喜欢/i.test(label) ||
+      container?.classList.contains('style-default-active') ||
+      container?.querySelector('[aria-pressed="true"]') === button
+    );
+  }
+
   function showToast(message) {
     const oldToast = document.querySelector('#yt-like-hotkey-toast');
     oldToast?.remove();
@@ -149,6 +164,11 @@
 
     if (likeButton) {
       event.preventDefault();
+      if (isLiked(likeButton)) {
+        showToast('已点赞');
+        return;
+      }
+
       likeButton.click();
       showToast('已点赞');
     }
